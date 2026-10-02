@@ -1,8 +1,9 @@
 name: Build Mobile Shop ERP Windows
 on:
   workflow_dispatch:
-  push:
-    branches: [ main ]
+
+permissions:
+  contents: write
 jobs:
   build-windows:
     runs-on: windows-latest
@@ -117,3 +118,11 @@ jobs:
             app/frontend/release/*.exe
             app/frontend/release/*.zip
           retention-days: 30
+
+      - name: Publish GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete mobile-shop-erp-v1.0.0 --repo ${{ github.repository }} --yes 2>$null
+          gh release create mobile-shop-erp-v1.0.0 app/frontend/release/Mobile-Shop-ERP-1.0.0-x64.exe app/frontend/release/Mobile-Shop-ERP-1.0.0-x64.zip --repo ${{ github.repository }} --title "Mobile Shop ERP Windows v1.0.0" --notes "Windows laptop build. Includes portable EXE and ZIP package."
