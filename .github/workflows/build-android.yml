@@ -23,6 +23,7 @@ jobs:
           cp patches/Navbar.jsx app/frontend/src/components/Layout/Navbar.jsx
           cp patches/App.jsx app/frontend/src/App.jsx
           cp patches/ShopSettings.jsx app/frontend/src/pages/Settings/ShopSettings.jsx
+          cp patches/NewSale.jsx app/frontend/src/pages/Sales/NewSale.jsx
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
