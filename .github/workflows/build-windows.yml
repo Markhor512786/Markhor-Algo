@@ -113,7 +113,25 @@ jobs:
 
       - name: Build Windows desktop app
         working-directory: app/frontend
+        env:
+          CSC_LINK: ${{ secrets.WINDOWS_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_CSC_KEY_PASSWORD }}
         run: npx electron-builder --win --x64
+
+      - name: Verify Windows signature
+        shell: pwsh
+        run: |
+          $exe = "app/frontend/release/Mobile-Shop-ERP-1.0.0-x64.exe"
+          $sig = Get-AuthenticodeSignature $exe
+          Write-Host "Signature Status: $($sig.Status)"
+          Write-Host "Signer: $($sig.SignerCertificate.Subject)"
+          "### Windows signing status" >> $env:GITHUB_STEP_SUMMARY
+          "- Status: **$($sig.Status)**" >> $env:GITHUB_STEP_SUMMARY
+          if ($sig.SignerCertificate) {
+            "- Signer: $($sig.SignerCertificate.Subject)" >> $env:GITHUB_STEP_SUMMARY
+          } else {
+            "- Signer: none (unsigned build)" >> $env:GITHUB_STEP_SUMMARY
+          }
 
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
@@ -131,4 +149,4 @@ jobs:
         run: |
           gh release delete mobile-shop-erp-v1.0.0 --repo ${{ github.repository }} --yes 2>$null
           gh api -X DELETE repos/${{ github.repository }}/git/refs/tags/mobile-shop-erp-v1.0.0 2>$null
-          gh release create mobile-shop-erp-v1.0.0 app/frontend/release/Mobile-Shop-ERP-1.0.0-x64.exe app/frontend/release/Mobile-Shop-ERP-1.0.0-x64.zip --repo ${{ github.repository }} --title "Mobile Shop ERP Windows v1.0.0" --notes "Latest fixed Windows laptop build. Includes portable EXE and ZIP package."
+          gh release create mobile-shop-erp-v1.0.0 app/frontend/release/Mobile-Shop-ERP-1.0.0-x64.exe app/frontend/release/Mobile-Shop-ERP-1.0.0-x64.zip --repo ${{ github.repository }} --title "Mobile Shop ERP Windows v1.0.0" --notes "Latest fixed Windows laptop build. Includes portable EXE and ZIP package. If WINDOWS_CSC_LINK and WINDOWS_CSC_KEY_PASSWORD repository secrets are configured, the EXE is Authenticode signed automatically."
