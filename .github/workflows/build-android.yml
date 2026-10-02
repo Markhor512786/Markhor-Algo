@@ -19,6 +19,10 @@ jobs:
           cp patches/api.js app/frontend/src/services/api.js
           cp patches/Dashboard.jsx app/frontend/src/pages/Dashboard.jsx
           cp patches/index.css app/frontend/src/index.css
+          cp patches/Sidebar.jsx app/frontend/src/components/Layout/Sidebar.jsx
+          cp patches/Navbar.jsx app/frontend/src/components/Layout/Navbar.jsx
+          cp patches/App.jsx app/frontend/src/App.jsx
+          cp patches/ShopSettings.jsx app/frontend/src/pages/Settings/ShopSettings.jsx
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
