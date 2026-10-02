@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { reportAPI, globalSearchAPI } from '../services/api';
-import SecurityWarning from '../components/Common/SecurityWarning';
 import { DollarSign, TrendingUp, Smartphone, AlertTriangle, Search } from 'lucide-react';
 
 export default function Dashboard() {
@@ -11,7 +10,6 @@ export default function Dashboard() {
   useEffect(()=>setResults(globalSearchAPI(query)),[query]);
   if(loading)return <div className="flex items-center justify-center h-96"><div className="text-gray-500">Loading...</div></div>;
   return <div>
-    <SecurityWarning/>
     <div className="mb-4 md:mb-6"><h2 className="text-xl md:text-2xl font-bold text-gray-900">Dashboard</h2><p className="text-sm md:text-base text-gray-500">Overview of your shop</p></div>
     <div className="card mb-5"><div className="card-body">
       <div className="relative"><Search className="w-5 h-5 absolute left-3 top-3 text-gray-400"/><input className="input pl-10" value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search mobile, IMEI, accessory, customer, sale..."/></div>
