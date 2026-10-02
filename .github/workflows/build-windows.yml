@@ -130,4 +130,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release delete mobile-shop-erp-v1.0.0 --repo ${{ github.repository }} --yes 2>$null
-          gh release create mobile-shop-erp-v1.0.0 app/frontend/release/Mobile-Shop-ERP-1.0.0-x64.exe app/frontend/release/Mobile-Shop-ERP-1.0.0-x64.zip --repo ${{ github.repository }} --title "Mobile Shop ERP Windows v1.0.0" --notes "Windows laptop build. Includes portable EXE and ZIP package."
+          gh api -X DELETE repos/${{ github.repository }}/git/refs/tags/mobile-shop-erp-v1.0.0 2>$null
+          gh release create mobile-shop-erp-v1.0.0 app/frontend/release/Mobile-Shop-ERP-1.0.0-x64.exe app/frontend/release/Mobile-Shop-ERP-1.0.0-x64.zip --repo ${{ github.repository }} --title "Mobile Shop ERP Windows v1.0.0" --notes "Latest fixed Windows laptop build. Includes portable EXE and ZIP package."
