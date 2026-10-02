@@ -26,7 +26,7 @@ jobs:
       - name: Add Android wrapper
         working-directory: app/frontend
         run: |
-          npm ci
+          npm install
           npm install @capacitor/core @capacitor/android
           npm install -D @capacitor/cli
           cat > capacitor.config.json <<'JSON'
