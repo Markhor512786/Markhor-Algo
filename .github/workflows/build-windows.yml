@@ -143,14 +143,18 @@ jobs:
           @echo off
           setlocal
           set "APP=%~dp0dist\index.html"
-          where msedge.exe >nul 2>nul
-          if %errorlevel%==0 (
-            start "" msedge.exe --app="file:///%APP:\=/%"
-            exit /b
-          )
           start "" "%APP%"
           '@ | Set-Content release/browser-package/START-CELL-POINT-2.cmd
           Compress-Archive -Path release/browser-package/* -DestinationPath release/Cell-Point-2-No-EXE.zip -Force
+
+      - name: Create click-only browser package
+        working-directory: app/frontend
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force release/click-only | Out-Null
+          Copy-Item dist/index.html release/click-only/index.html -Force
+          Copy-Item dist/assets release/click-only/assets -Recurse -Force
+          Compress-Archive -Path release/click-only/* -DestinationPath release/Cell-Point-2-CLICK-OPEN.zip -Force
 
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
@@ -168,4 +172,4 @@ jobs:
         run: |
           gh release delete mobile-shop-erp-v1.0.0 --repo ${{ github.repository }} --yes 2>$null
           gh api -X DELETE repos/${{ github.repository }}/git/refs/tags/mobile-shop-erp-v1.0.0 2>$null
-          gh release create mobile-shop-erp-v1.0.0 app/frontend/release/Mobile-Shop-ERP-1.0.0-x64.exe app/frontend/release/Mobile-Shop-ERP-1.0.0-x64.zip app/frontend/release/Cell-Point-2-No-EXE.zip --repo ${{ github.repository }} --title "Mobile Shop ERP Windows v1.0.0" --notes "Latest fixed Windows laptop build. Includes portable EXE and ZIP package. If WINDOWS_CSC_LINK and WINDOWS_CSC_KEY_PASSWORD repository secrets are configured, the EXE is Authenticode signed automatically."
+          gh release create mobile-shop-erp-v1.0.0 app/frontend/release/Mobile-Shop-ERP-1.0.0-x64.exe app/frontend/release/Mobile-Shop-ERP-1.0.0-x64.zip app/frontend/release/Cell-Point-2-No-EXE.zip app/frontend/release/Cell-Point-2-CLICK-OPEN.zip --repo ${{ github.repository }} --title "Mobile Shop ERP Windows v1.0.0" --notes "Latest fixed Windows laptop build. Includes portable EXE and ZIP package. If WINDOWS_CSC_LINK and WINDOWS_CSC_KEY_PASSWORD repository secrets are configured, the EXE is Authenticode signed automatically."
