@@ -24,6 +24,9 @@ jobs:
           cp patches/App.jsx app/frontend/src/App.jsx
           cp patches/ShopSettings.jsx app/frontend/src/pages/Settings/ShopSettings.jsx
           cp patches/NewSale.jsx app/frontend/src/pages/Sales/NewSale.jsx
+          cp patches/MobileList.jsx app/frontend/src/pages/Mobiles/MobileList.jsx
+          cp patches/AccessoryList.jsx app/frontend/src/pages/Accessories/AccessoryList.jsx
+          cp patches/CustomerList.jsx app/frontend/src/pages/Customers/CustomerList.jsx
           cp patches/SaleList.jsx app/frontend/src/pages/Sales/SaleList.jsx
           mkdir -p app/frontend/src/pages/Expenses
           cp patches/Expenses.jsx app/frontend/src/pages/Expenses/Expenses.jsx
