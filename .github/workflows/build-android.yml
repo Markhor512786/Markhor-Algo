@@ -1,0 +1,55 @@
+name: Build Mobile Shop ERP Android APK
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout build repository
+        uses: actions/checkout@v4
+      - name: Checkout Mobile Shop ERP baseline
+        uses: actions/checkout@v4
+        with:
+          repository: Sultan56k/mobile-shop-erp
+          path: app
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: app/frontend/package-lock.json
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Add Android wrapper
+        working-directory: app/frontend
+        run: |
+          npm ci
+          npm install @capacitor/core @capacitor/android
+          npm install -D @capacitor/cli
+          cat > capacitor.config.json <<'JSON'
+          {
+            "appId": "com.markhor.mobileshoperp",
+            "appName": "Mobile Shop ERP",
+            "webDir": "dist",
+            "server": { "androidScheme": "https" }
+          }
+          JSON
+          npm run build
+          npx cap add android
+          npx cap sync android
+      - name: Build debug APK
+        working-directory: app/frontend/android
+        run: chmod +x gradlew && ./gradlew assembleDebug --no-daemon
+      - name: Stage APK
+        run: cp app/frontend/android/app/build/outputs/apk/debug/app-debug.apk Mobile-Shop-ERP.apk
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mobile-Shop-ERP-APK
+          path: Mobile-Shop-ERP.apk
+          retention-days: 30
