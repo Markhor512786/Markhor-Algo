@@ -1,9 +1,9 @@
 import { NavLink } from 'react-router-dom';
-import { X, LayoutDashboard, Smartphone, Cable, ShoppingCart, Users, FileText, Settings, AlertTriangle, Store } from 'lucide-react';
+import { X, LayoutDashboard, Smartphone, Cable, ShoppingCart, Users, FileText, Settings, AlertTriangle, Store, WalletCards, DatabaseBackup, History } from 'lucide-react';
 const navItems=[
 {to:'/',icon:LayoutDashboard,label:'Dashboard'},{to:'/sales',icon:ShoppingCart,label:'Sales / Invoices'},
 {to:'/mobiles',icon:Smartphone,label:'Mobiles'},{to:'/accessories',icon:Cable,label:'Accessories'},
-{to:'/customers',icon:Users,label:'Customers'},{to:'/reports',icon:FileText,label:'Reports'},
+{to:'/customers',icon:Users,label:'Customers'},{to:'/expenses',icon:WalletCards,label:'Expenses'},{to:'/reports',icon:FileText,label:'Reports'},{to:'/backup',icon:DatabaseBackup,label:'Backup & Restore'},{to:'/audit',icon:History,label:'Activity Log'},
 {to:'/settings',icon:Settings,label:'Settings'}];
 export default function Sidebar({isOpen,onClose}){
  return <><>{isOpen&&<div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm z-40 lg:hidden" onClick={onClose}/>}</>
