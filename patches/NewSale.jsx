@@ -1,14 +1,348 @@
-import {useEffect,useMemo,useState} from 'react';import {useNavigate} from 'react-router-dom';import {Search,Trash2,FileText,Printer,MessageCircle,Plus} from 'lucide-react';import {saleAPI,mobileAPI,accessoryAPI,customerAPI,shopAPI} from '../../services/api';
-export default function NewSale(){const nav=useNavigate();const [mob,setMob]=useState([]),[acc,setAcc]=useState([]),[shop,setShop]=useState({}),[q,setQ]=useState(''),[items,setItems]=useState([]),[busy,setBusy]=useState(false),[done,setDone]=useState(null);const [cust,setCust]=useState({name:'',phone:'',email:'',address:''});const [pay,setPay]=useState('cash');
-useEffect(()=>{Promise.all([mobileAPI.getAll({status:'in_stock',limit:1000}),accessoryAPI.getAll({limit:1000}),shopAPI.get()]).then(([m,a,s])=>{setMob(m.data.data.mobiles);setAcc(a.data.data.accessories);setShop(s.data.data)})},[]);
-const products=useMemo(()=>{const z=q.toLowerCase().trim();if(!z)return[];return [...mob.map(x=>({type:'mobile',id:x.id,name:`${x.brand} ${x.model}`,detail:`IMEI: ${x.imei}`,price:+x.sellingPrice,stock:1})),...acc.map(x=>({type:'accessory',id:x.id,name:x.name,detail:`${x.category||'Accessory'} · Stock: ${x.quantity}`,price:+x.sellingPrice,stock:+x.quantity}))].filter(x=>(x.name+' '+x.detail).toLowerCase().includes(z)).slice(0,12)},[q,mob,acc]);
-const add=p=>{if(p.type==='mobile'&&items.some(x=>x.type==='mobile'&&x.id===p.id))return;const ex=items.findIndex(x=>x.type===p.type&&x.id===p.id);if(ex>=0){setItems(v=>v.map((x,i)=>i===ex?{...x,qty:Math.min(x.qty+1,p.stock)}:x))}else setItems(v=>[...v,{...p,qty:1}]);setQ('')};
-const total=items.reduce((s,x)=>s+x.price*x.qty,0);
-const complete=async()=>{if(!cust.name.trim()||!cust.phone.trim())return alert('Customer name and WhatsApp number are required');if(!items.length)return alert('Select at least one inventory product');setBusy(true);try{const cr=await customerAPI.create(cust);const r=await saleAPI.create({customerId:cr.data.data.id,paymentMethod:pay,saleDate:new Date().toISOString().slice(0,10),items:items.map(x=>({itemType:x.type,itemId:x.id,quantity:x.qty,price:x.price,name:x.name}))});setDone({...r.data.data,customer:cust,shop,invoiceNo:'INV-'+String(r.data.data.id).padStart(6,'0')})}catch(e){alert(e.response?.data?.error||e.message)}finally{setBusy(false)}};
-const print=()=>window.print();const whatsapp=()=>{if(!done)return;const n=String(cust.phone).replace(/[^0-9]/g,'');const msg=encodeURIComponent(`${shop.shopName||'Mobile Shop'} invoice ${done.invoiceNo}\nAmount: Rs ${total.toLocaleString()}\nThank you for your purchase.`);window.open(`https://wa.me/${n}?text=${msg}`,'_blank')};
-if(done)return <div className="max-w-4xl mx-auto"><div className="flex flex-wrap gap-3 mb-5 print:hidden"><button onClick={print} className="btn btn-primary flex gap-2"><Printer className="w-4 h-4"/>Print / Save PDF</button><button onClick={whatsapp} className="btn btn-success flex gap-2"><MessageCircle className="w-4 h-4"/>Send on WhatsApp</button><button onClick={()=>nav('/sales')} className="btn btn-secondary">Sales History</button></div><Invoice data={done} items={items} total={total}/></div>;
-return <div className="max-w-6xl mx-auto"><div className="mb-6"><h2 className="text-2xl font-extrabold">Create New Invoice</h2><p className="text-slate-500">Customer is new for every invoice. Products come directly from inventory.</p></div><div className="grid lg:grid-cols-[.9fr_1.4fr] gap-6">
-<div className="card"><div className="card-header font-bold">Customer Details (New)</div><div className="card-body space-y-4">{[['name','Customer Name *'],['phone','Phone / WhatsApp *'],['email','Email (Optional)'],['address','Address (Optional)']].map(([k,l])=><label key={k} className="block text-sm font-semibold text-slate-700">{l}<input className="input mt-1.5" value={cust[k]} onChange={e=>setCust({...cust,[k]:e.target.value})}/></label>)}<label className="block text-sm font-semibold">Payment Method<select className="input mt-1.5" value={pay} onChange={e=>setPay(e.target.value)}><option value="cash">Cash</option><option value="card">Card</option><option value="bank_transfer">Bank Transfer</option><option value="other">Other</option></select></label></div></div>
-<div className="space-y-6"><div className="card"><div className="card-header font-bold">Add Products From Inventory</div><div className="card-body"><div className="relative"><Search className="absolute left-3 top-3 w-5 h-5 text-blue-400"/><input autoFocus className="input pl-10" placeholder="Search mobile, model, IMEI, accessory..." value={q} onChange={e=>setQ(e.target.value)}/></div>{q&&<div className="mt-2 border border-blue-100 rounded-xl overflow-hidden">{products.length?products.map(p=><button key={p.type+p.id} onClick={()=>add(p)} className="w-full flex items-center text-left gap-3 p-3 border-b last:border-0 hover:bg-blue-50"><Plus className="w-4 h-4 text-blue-600"/><span className="flex-1"><b>{p.name}</b><small className="block text-slate-500">{p.detail}</small></span><b className="text-blue-700">Rs {p.price.toLocaleString()}</b></button>):<p className="p-3 text-slate-500">No inventory match</p>}</div>}</div></div>
-<div className="card"><div className="card-header flex justify-between"><b>Invoice Items</b><b className="text-blue-700">Rs {total.toLocaleString()}</b></div><div className="card-body">{items.length?items.map((x,i)=><div key={x.type+x.id} className="flex items-center gap-3 py-3 border-b"><div className="flex-1"><b>{x.name}</b><small className="block text-slate-500">{x.detail}</small></div>{x.type==='accessory'&&<input type="number" min="1" max={x.stock} value={x.qty} onChange={e=>setItems(v=>v.map((a,j)=>j===i?{...a,qty:Math.max(1,Math.min(+e.target.value,x.stock))}:a))} className="input w-20"/>}<span className="font-semibold w-28 text-right">Rs {(x.price*x.qty).toLocaleString()}</span><button onClick={()=>setItems(v=>v.filter((_,j)=>j!==i))} className="text-red-500"><Trash2 className="w-4 h-4"/></button></div>):<p className="text-center text-slate-400 py-8">Search and select inventory products above.</p>}<button disabled={busy} onClick={complete} className="btn btn-primary w-full mt-5 flex justify-center gap-2"><FileText className="w-4 h-4"/>{busy?'Saving...':'Complete Sale & Generate Invoice'}</button></div></div></div></div></div>}
-function Invoice({data,items,total}){const s=data.shop||{},c=data.customer||{};return <div className="bg-white border border-slate-200 rounded-2xl p-8 md:p-10 shadow-sm print:shadow-none print:border-0"><div className="flex justify-between gap-6 border-b pb-6">{s.logo?<img src={s.logo} className="w-20 h-20 object-contain"/>:<div/>}<div className="flex-1"><h1 className="text-2xl font-extrabold">{s.shopName||'Mobile Shop'}</h1><p className="text-sm text-slate-500">{s.address}</p><p className="text-sm text-slate-500">{s.phone} {s.email&&' · '+s.email}</p></div><div className="text-right"><b className="text-2xl">INVOICE</b><p>{data.invoiceNo}</p><p>{data.saleDate}</p></div></div><div className="py-6"><b>Bill To</b><p>{c.name}</p><p>{c.phone}</p><p>{c.email}</p><p>{c.address}</p></div><table className="w-full"><thead><tr className="border-y text-left"><th className="py-3">Product</th><th>Details</th><th>Qty</th><th className="text-right">Price</th><th className="text-right">Total</th></tr></thead><tbody>{items.map(x=><tr key={x.type+x.id} className="border-b"><td className="py-3">{x.name}</td><td className="text-sm">{x.detail}</td><td>{x.qty}</td><td className="text-right">Rs {x.price.toLocaleString()}</td><td className="text-right">Rs {(x.price*x.qty).toLocaleString()}</td></tr>)}</tbody></table><div className="mt-6 text-right text-2xl font-extrabold">Total: Rs {total.toLocaleString()}</div><div className="mt-10 pt-4 border-t text-sm text-slate-500">Thank you for your purchase.</div></div>}
+import {useEffect,useMemo,useState} from 'react';
+import {useNavigate} from 'react-router-dom';
+import {Search,Trash2,FileText,Printer,MessageCircle,Plus} from 'lucide-react';
+import {saleAPI,mobileAPI,accessoryAPI,customerAPI,shopAPI} from '../../services/api';
+
+export default function NewSale(){
+  const nav=useNavigate();
+  const [mob,setMob]=useState([]);
+  const [acc,setAcc]=useState([]);
+  const [shop,setShop]=useState({});
+  const [q,setQ]=useState('');
+  const [searchOpen,setSearchOpen]=useState(false);
+  const [items,setItems]=useState([]);
+  const [busy,setBusy]=useState(false);
+  const [done,setDone]=useState(null);
+  const [cust,setCust]=useState({name:'',phone:'',email:'',address:''});
+  const [pay,setPay]=useState('cash');
+
+  const loadInventory=()=>Promise.all([
+    mobileAPI.getAll({status:'in_stock',limit:10000}),
+    accessoryAPI.getAll({limit:10000}),
+    shopAPI.get()
+  ]).then(([m,a,s])=>{
+    setMob(m.data.data.mobiles||[]);
+    setAcc((a.data.data.accessories||[]).filter(x=>Number(x.quantity||0)>0));
+    setShop(s.data.data||{});
+  });
+
+  useEffect(()=>{loadInventory();},[]);
+
+  const products=useMemo(()=>{
+    const all=[
+      ...mob.map(x=>({
+        type:'mobile',
+        id:x.id,
+        name:(String(x.brand||'')+' '+String(x.model||'')).trim()||'Mobile',
+        detail:'IMEI: '+String(x.imei||'-')+(x.storage?' · '+x.storage:'')+(x.color?' · '+x.color:''),
+        price:Number(x.sellingPrice||0),
+        stock:1
+      })),
+      ...acc.map(x=>({
+        type:'accessory',
+        id:x.id,
+        name:x.name||'Accessory',
+        detail:(x.category||'Accessory')+(x.brand?' · '+x.brand:'')+' · Stock: '+Number(x.quantity||0),
+        price:Number(x.sellingPrice||0),
+        stock:Number(x.quantity||0)
+      }))
+    ];
+
+    const z=q.toLowerCase().trim();
+    if(!z)return all.slice(0,12);
+
+    return all.filter(x=>
+      (x.name+' '+x.detail).toLowerCase().includes(z)
+    ).slice(0,20);
+  },[q,mob,acc]);
+
+  const add=p=>{
+    if(p.type==='mobile'&&items.some(x=>x.type==='mobile'&&x.id===p.id))return;
+
+    const ex=items.findIndex(x=>x.type===p.type&&x.id===p.id);
+    if(ex>=0){
+      setItems(v=>v.map((x,i)=>
+        i===ex?{...x,qty:Math.min(x.qty+1,p.stock)}:x
+      ));
+    }else{
+      setItems(v=>[...v,{...p,qty:1}]);
+    }
+
+    setQ('');
+    setSearchOpen(false);
+  };
+
+  const total=items.reduce((s,x)=>s+x.price*x.qty,0);
+
+  const complete=async()=>{
+    if(!cust.name.trim()||!cust.phone.trim())return alert('Customer name and WhatsApp number are required');
+    if(!items.length)return alert('Select at least one inventory product');
+
+    setBusy(true);
+    try{
+      const cr=await customerAPI.create(cust);
+      const r=await saleAPI.create({
+        customerId:cr.data.data.id,
+        paymentMethod:pay,
+        saleDate:new Date().toISOString().slice(0,10),
+        items:items.map(x=>({
+          itemType:x.type,
+          itemId:x.id,
+          quantity:x.qty,
+          price:x.price,
+          name:x.name
+        }))
+      });
+
+      setDone({
+        ...r.data.data,
+        customer:cust,
+        shop,
+        invoiceNo:'INV-'+String(r.data.data.id).padStart(6,'0')
+      });
+    }catch(e){
+      alert(e.response?.data?.error||e.message);
+    }finally{
+      setBusy(false);
+    }
+  };
+
+  const print=()=>window.print();
+
+  const whatsapp=()=>{
+    if(!done)return;
+    const n=String(cust.phone).replace(/[^0-9]/g,'');
+    const msg=encodeURIComponent(
+      (shop.shopName||'Mobile Shop')+' invoice '+done.invoiceNo+
+      '\nAmount: Rs '+total.toLocaleString()+
+      '\nThank you for your purchase.'
+    );
+    window.open('https://wa.me/'+n+'?text='+msg,'_blank');
+  };
+
+  if(done){
+    return (
+      <div className="max-w-4xl mx-auto">
+        <div className="flex flex-wrap gap-3 mb-5 print:hidden">
+          <button onClick={print} className="btn btn-primary flex gap-2">
+            <Printer className="w-4 h-4"/>Print / Save PDF
+          </button>
+          <button onClick={whatsapp} className="btn btn-success flex gap-2">
+            <MessageCircle className="w-4 h-4"/>Send on WhatsApp
+          </button>
+          <button onClick={()=>nav('/sales')} className="btn btn-secondary">Sales History</button>
+        </div>
+        <Invoice data={done} items={items} total={total}/>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-6xl mx-auto">
+      <div className="mb-6">
+        <h2 className="text-2xl font-extrabold">Create New Invoice</h2>
+        <p className="text-slate-500">Customer is new for every invoice. Products come directly from inventory.</p>
+      </div>
+
+      <div className="grid lg:grid-cols-[.9fr_1.4fr] gap-6">
+        <div className="card">
+          <div className="card-header font-bold">Customer Details (New)</div>
+          <div className="card-body space-y-4">
+            {[
+              ['name','Customer Name *'],
+              ['phone','Phone / WhatsApp *'],
+              ['email','Email (Optional)'],
+              ['address','Address (Optional)']
+            ].map(([k,l])=>(
+              <label key={k} className="block text-sm font-semibold text-slate-700">
+                {l}
+                <input
+                  className="input mt-1.5"
+                  value={cust[k]}
+                  onChange={e=>setCust({...cust,[k]:e.target.value})}
+                />
+              </label>
+            ))}
+
+            <label className="block text-sm font-semibold">
+              Payment Method
+              <select className="input mt-1.5" value={pay} onChange={e=>setPay(e.target.value)}>
+                <option value="cash">Cash</option>
+                <option value="card">Card</option>
+                <option value="bank_transfer">Bank Transfer</option>
+                <option value="other">Other</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <div className="card">
+            <div className="card-header font-bold">Add Products From Inventory</div>
+            <div className="card-body">
+              <div className="relative">
+                <Search className="absolute left-3 top-3 w-5 h-5 text-blue-400 pointer-events-none"/>
+                <input
+                  autoFocus
+                  className="input pl-10 pr-24"
+                  placeholder="Search mobile, model, IMEI, accessory..."
+                  value={q}
+                  onFocus={()=>{loadInventory();setSearchOpen(true);}}
+                  onChange={e=>{setQ(e.target.value);setSearchOpen(true);}}
+                  onKeyDown={e=>{
+                    if(e.key==='Enter'){
+                      e.preventDefault();
+                      if(products[0])add(products[0]);
+                    }
+                  }}
+                  autoComplete="off"
+                />
+                <button
+                  type="button"
+                  onClick={()=>{loadInventory();setSearchOpen(true);}}
+                  className="absolute right-2 top-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold"
+                >
+                  Search
+                </button>
+              </div>
+
+              {searchOpen&&(
+                <div className="mt-2 border border-blue-100 rounded-xl overflow-hidden max-h-80 overflow-y-auto">
+                  {products.length?products.map(p=>(
+                    <button
+                      type="button"
+                      key={p.type+p.id}
+                      onClick={()=>add(p)}
+                      className="w-full flex items-center text-left gap-3 p-3 border-b last:border-0 hover:bg-blue-50"
+                    >
+                      <Plus className="w-4 h-4 text-blue-600"/>
+                      <span className="flex-1">
+                        <b>{p.name}</b>
+                        <small className="block text-slate-500">{p.detail}</small>
+                      </span>
+                      <b className="text-blue-700">Rs {p.price.toLocaleString()}</b>
+                    </button>
+                  )):(
+                    <p className="p-3 text-slate-500">
+                      No in-stock inventory match. Add stock first or try another search.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="card-header flex justify-between">
+              <b>Invoice Items</b>
+              <b className="text-blue-700">Rs {total.toLocaleString()}</b>
+            </div>
+
+            <div className="card-body">
+              {items.length?items.map((x,i)=>(
+                <div key={x.type+x.id} className="flex items-center gap-3 py-3 border-b">
+                  <div className="flex-1">
+                    <b>{x.name}</b>
+                    <small className="block text-slate-500">{x.detail}</small>
+                  </div>
+
+                  {x.type==='accessory'&&(
+                    <input
+                      type="number"
+                      min="1"
+                      max={x.stock}
+                      value={x.qty}
+                      onChange={e=>setItems(v=>v.map((a,j)=>
+                        j===i?{...a,qty:Math.max(1,Math.min(+e.target.value,x.stock))}:a
+                      ))}
+                      className="input w-20"
+                    />
+                  )}
+
+                  <span className="font-semibold w-28 text-right">
+                    Rs {(x.price*x.qty).toLocaleString()}
+                  </span>
+
+                  <button onClick={()=>setItems(v=>v.filter((_,j)=>j!==i))} className="text-red-500">
+                    <Trash2 className="w-4 h-4"/>
+                  </button>
+                </div>
+              )):(
+                <p className="text-center text-slate-400 py-8">
+                  Search and select inventory products above.
+                </p>
+              )}
+
+              <button disabled={busy} onClick={complete} className="btn btn-primary w-full mt-5 flex justify-center gap-2">
+                <FileText className="w-4 h-4"/>
+                {busy?'Saving...':'Complete Sale & Generate Invoice'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Invoice({data,items,total}){
+  const s=data.shop||{};
+  const c=data.customer||{};
+
+  return (
+    <div className="bg-white border border-slate-200 rounded-2xl p-8 md:p-10 shadow-sm print:shadow-none print:border-0">
+      <div className="flex justify-between gap-6 border-b pb-6">
+        {s.logo?<img src={s.logo} className="w-20 h-20 object-contain"/>:<div/>}
+        <div className="flex-1">
+          <h1 className="text-2xl font-extrabold">{s.shopName||'Mobile Shop'}</h1>
+          <p className="text-sm text-slate-500">{s.address}</p>
+          <p className="text-sm text-slate-500">{s.phone} {s.email&&' · '+s.email}</p>
+        </div>
+        <div className="text-right">
+          <b className="text-2xl">INVOICE</b>
+          <p>{data.invoiceNo}</p>
+          <p>{data.saleDate}</p>
+        </div>
+      </div>
+
+      <div className="py-6">
+        <b>Bill To</b>
+        <p>{c.name}</p>
+        <p>{c.phone}</p>
+        <p>{c.email}</p>
+        <p>{c.address}</p>
+      </div>
+
+      <table className="w-full">
+        <thead>
+          <tr className="border-y text-left">
+            <th className="py-3">Product</th>
+            <th>Details</th>
+            <th>Qty</th>
+            <th className="text-right">Price</th>
+            <th className="text-right">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map(x=>(
+            <tr key={x.type+x.id} className="border-b">
+              <td className="py-3">{x.name}</td>
+              <td className="text-sm">{x.detail}</td>
+              <td>{x.qty}</td>
+              <td className="text-right">Rs {x.price.toLocaleString()}</td>
+              <td className="text-right">Rs {(x.price*x.qty).toLocaleString()}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <div className="mt-6 text-right text-2xl font-extrabold">
+        Total: Rs {total.toLocaleString()}
+      </div>
+
+      <div className="mt-10 pt-4 border-t text-sm text-slate-500">
+        Thank you for your purchase.
+      </div>
+    </div>
+  );
+}
