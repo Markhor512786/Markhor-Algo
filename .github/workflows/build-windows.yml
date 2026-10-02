@@ -1,0 +1,119 @@
+name: Build Mobile Shop ERP Windows
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout build repository
+        uses: actions/checkout@v4
+
+      - name: Checkout Mobile Shop ERP baseline
+        uses: actions/checkout@v4
+        with:
+          repository: Sultan56k/mobile-shop-erp
+          path: app
+
+      - name: Apply standalone desktop patches
+        shell: pwsh
+        run: |
+          Copy-Item patches/api.js app/frontend/src/services/api.js -Force
+          Copy-Item patches/Dashboard.jsx app/frontend/src/pages/Dashboard.jsx -Force
+          Copy-Item patches/index.css app/frontend/src/index.css -Force
+          Copy-Item patches/Sidebar.jsx app/frontend/src/components/Layout/Sidebar.jsx -Force
+          Copy-Item patches/Navbar.jsx app/frontend/src/components/Layout/Navbar.jsx -Force
+          Copy-Item patches/App.jsx app/frontend/src/App.jsx -Force
+          Copy-Item patches/ShopSettings.jsx app/frontend/src/pages/Settings/ShopSettings.jsx -Force
+          Copy-Item patches/NewSale.jsx app/frontend/src/pages/Sales/NewSale.jsx -Force
+          Copy-Item patches/SaleList.jsx app/frontend/src/pages/Sales/SaleList.jsx -Force
+          New-Item -ItemType Directory -Force app/frontend/src/pages/Expenses | Out-Null
+          Copy-Item patches/Expenses.jsx app/frontend/src/pages/Expenses/Expenses.jsx -Force
+          Copy-Item patches/BackupRestore.jsx app/frontend/src/pages/Settings/BackupRestore.jsx -Force
+          Copy-Item patches/AuditLog.jsx app/frontend/src/pages/Settings/AuditLog.jsx -Force
+          Copy-Item patches/DailyClosing.jsx app/frontend/src/pages/Reports/DailyClosing.jsx -Force
+          New-Item -ItemType Directory -Force app/frontend/src/pages/History | Out-Null
+          Copy-Item patches/HistorySearch.jsx app/frontend/src/pages/History/HistorySearch.jsx -Force
+          Copy-Item patches/InventoryCSV.jsx app/frontend/src/pages/Settings/InventoryCSV.jsx -Force
+          (Get-Content app/frontend/src/App.jsx -Raw).Replace('BrowserRouter','HashRouter') | Set-Content app/frontend/src/App.jsx
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install frontend dependencies
+        working-directory: app/frontend
+        run: npm install
+
+      - name: Build web app for desktop
+        working-directory: app/frontend
+        run: npx vite build --base=./
+
+      - name: Add Electron wrapper
+        working-directory: app/frontend
+        shell: pwsh
+        run: |
+          npm install -D electron electron-builder
+          @'
+          const { app, BrowserWindow, shell } = require('electron');
+          const path = require('path');
+
+          function createWindow() {
+            const win = new BrowserWindow({
+              width: 1440,
+              height: 900,
+              minWidth: 1100,
+              minHeight: 700,
+              backgroundColor: '#f7fbff',
+              autoHideMenuBar: true,
+              webPreferences: {
+                contextIsolation: true,
+                nodeIntegration: false
+              }
+            });
+            win.loadFile(path.join(__dirname, 'dist', 'index.html'));
+            win.webContents.setWindowOpenHandler(({ url }) => {
+              shell.openExternal(url);
+              return { action: 'deny' };
+            });
+          }
+
+          app.whenReady().then(() => {
+            createWindow();
+            app.on('activate', () => {
+              if (BrowserWindow.getAllWindows().length === 0) createWindow();
+            });
+          });
+
+          app.on('window-all-closed', () => {
+            if (process.platform !== 'darwin') app.quit();
+          });
+          '@ | Set-Content electron-main.cjs
+
+          $pkg = Get-Content package.json -Raw | ConvertFrom-Json
+          $pkg | Add-Member -NotePropertyName main -NotePropertyValue "electron-main.cjs" -Force
+          $pkg | Add-Member -NotePropertyName productName -NotePropertyValue "Mobile Shop ERP" -Force
+          $pkg | Add-Member -NotePropertyName build -NotePropertyValue ([pscustomobject]@{
+            appId = "com.markhor.mobileshoperp.desktop"
+            productName = "Mobile Shop ERP"
+            directories = [pscustomobject]@{ output = "release" }
+            files = @("dist/**/*","electron-main.cjs","package.json")
+            win = [pscustomobject]@{ target = @("portable","zip") }
+            artifactName = 'Mobile-Shop-ERP-${version}-${arch}.${ext}'
+          }) -Force
+          $pkg | ConvertTo-Json -Depth 20 | Set-Content package.json
+
+      - name: Build Windows desktop app
+        working-directory: app/frontend
+        run: npx electron-builder --win --x64
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mobile-Shop-ERP-Windows
+          path: |
+            app/frontend/release/*.exe
+            app/frontend/release/*.zip
+          retention-days: 30
