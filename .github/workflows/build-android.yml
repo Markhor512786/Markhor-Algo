@@ -30,6 +30,9 @@ jobs:
           cp patches/BackupRestore.jsx app/frontend/src/pages/Settings/BackupRestore.jsx
           cp patches/AuditLog.jsx app/frontend/src/pages/Settings/AuditLog.jsx
           cp patches/DailyClosing.jsx app/frontend/src/pages/Reports/DailyClosing.jsx
+          mkdir -p app/frontend/src/pages/History
+          cp patches/HistorySearch.jsx app/frontend/src/pages/History/HistorySearch.jsx
+          cp patches/InventoryCSV.jsx app/frontend/src/pages/Settings/InventoryCSV.jsx
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
