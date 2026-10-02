@@ -14,6 +14,10 @@ jobs:
         with:
           repository: Sultan56k/mobile-shop-erp
           path: app
+      - name: Apply standalone Android patches
+        run: |
+          cp patches/api.js app/frontend/src/services/api.js
+          cp patches/Dashboard.jsx app/frontend/src/pages/Dashboard.jsx
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
