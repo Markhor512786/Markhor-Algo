@@ -24,6 +24,10 @@ jobs:
           cp patches/App.jsx app/frontend/src/App.jsx
           cp patches/ShopSettings.jsx app/frontend/src/pages/Settings/ShopSettings.jsx
           cp patches/NewSale.jsx app/frontend/src/pages/Sales/NewSale.jsx
+          mkdir -p app/frontend/src/pages/Expenses
+          cp patches/Expenses.jsx app/frontend/src/pages/Expenses/Expenses.jsx
+          cp patches/BackupRestore.jsx app/frontend/src/pages/Settings/BackupRestore.jsx
+          cp patches/AuditLog.jsx app/frontend/src/pages/Settings/AuditLog.jsx
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
