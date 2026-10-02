@@ -125,7 +125,7 @@ export default function NewSale(){
       <div className="max-w-4xl mx-auto">
         <div className="flex flex-wrap gap-3 mb-5 print:hidden">
           <button onClick={print} className="btn btn-primary flex gap-2">
-            <Printer className="w-4 h-4"/>Print / Save PDF
+            <Printer className="w-4 h-4"/>Save PDF / Print
           </button>
           <button onClick={whatsapp} className="btn btn-success flex gap-2">
             <MessageCircle className="w-4 h-4"/>Send on WhatsApp
