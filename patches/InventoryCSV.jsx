@@ -1,0 +1,18 @@
+import {useRef,useState} from 'react';
+import {Download,Upload,FileSpreadsheet} from 'lucide-react';
+import {mobileAPI,accessoryAPI} from '../../services/api';
+
+const esc=v=>'"'+String(v??'').replaceAll('"','""')+'"';
+const download=(name,headers,rows)=>{const text=[headers,...rows].map(r=>r.map(esc).join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'text/csv'}));a.download=name;a.click();URL.revokeObjectURL(a.href)};
+const parseCSV=text=>{const rows=[];let row=[],v='',q=false;for(let i=0;i<text.length;i++){const c=text[i],n=text[i+1];if(c==='"'&&q&&n==='"'){v+='"';i++;}else if(c==='"'){q=!q;}else if(c===','&&!q){row.push(v);v='';}else if((c==='\n'||c==='\r')&&!q){if(c==='\r'&&n==='\n')i++;row.push(v);if(row.some(x=>x!==''))rows.push(row);row=[];v='';}else v+=c;}row.push(v);if(row.some(x=>x!==''))rows.push(row);return rows};
+
+export default function InventoryCSV(){
+ const file=useRef(),[type,setType]=useState('mobiles'),[msg,setMsg]=useState('');
+ const exportData=async()=>{
+   if(type==='mobiles'){const r=await mobileAPI.getAll({limit:10000});const rows=r.data.data.mobiles.map(x=>[x.brand,x.model,x.imei,x.purchasePrice,x.sellingPrice,x.purchaseDate,x.supplier,x.color,x.storage,x.condition,x.notes]);download('mobiles.csv',['brand','model','imei','purchasePrice','sellingPrice','purchaseDate','supplier','color','storage','condition','notes'],rows)}
+   else {const r=await accessoryAPI.getAll({limit:10000});const rows=r.data.data.accessories.map(x=>[x.name,x.category,x.brand,x.quantity,x.purchasePrice,x.sellingPrice,x.reorderLevel,x.supplier,x.description]);download('accessories.csv',['name','category','brand','quantity','purchasePrice','sellingPrice','reorderLevel','supplier','description'],rows)}
+ };
+ const importData=async e=>{const f=e.target.files?.[0];if(!f)return;try{const rows=parseCSV(await f.text());if(rows.length<2)throw new Error('CSV has no data');const headers=rows[0].map(x=>x.trim());let ok=0,fail=0;for(const r of rows.slice(1)){const o={};headers.forEach((h,i)=>o[h]=r[i]??'');try{if(type==='mobiles')await mobileAPI.create(o);else await accessoryAPI.create(o);ok++}catch{fail++}}setMsg(`Imported ${ok} row(s). Failed ${fail}.`)}catch(e2){setMsg(e2.message||'Import failed')}finally{e.target.value=''}};
+ return <div className="max-w-4xl mx-auto"><div className="mb-6"><h2 className="text-2xl font-extrabold">Inventory CSV Import / Export</h2><p className="text-slate-500">Move bulk mobile and accessory stock without manual entry.</p></div>
+ <div className="card"><div className="card-body p-7"><FileSpreadsheet className="w-10 h-10 text-blue-600 mb-4"/><div className="grid md:grid-cols-[1fr_auto_auto] gap-3 items-end"><label className="text-sm font-semibold">Inventory Type<select className="input mt-1.5" value={type} onChange={e=>{setType(e.target.value);setMsg('')}}><option value="mobiles">Mobiles</option><option value="accessories">Accessories</option></select></label><button onClick={exportData} className="btn btn-secondary flex gap-2"><Download className="w-4 h-4"/>Export CSV</button><input ref={file} type="file" accept=".csv,text/csv" className="hidden" onChange={importData}/><button onClick={()=>file.current?.click()} className="btn btn-primary flex gap-2"><Upload className="w-4 h-4"/>Import CSV</button></div>{msg&&<p className="mt-4 font-semibold text-blue-700">{msg}</p>}
+ <div className="mt-6 rounded-xl bg-blue-50 p-4 text-sm text-slate-600"><b>Tip:</b> Export a blank/current CSV first and use the same column headings for bulk import.</div></div></div></div>
