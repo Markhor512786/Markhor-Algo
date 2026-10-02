@@ -18,6 +18,7 @@ jobs:
         run: |
           cp patches/api.js app/frontend/src/services/api.js
           cp patches/Dashboard.jsx app/frontend/src/pages/Dashboard.jsx
+          cp patches/index.css app/frontend/src/index.css
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
