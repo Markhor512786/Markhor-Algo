@@ -1,6 +1,7 @@
 // Standalone Android/local-first API adapter. No Node server required.
 const DB_KEY='mobile_shop_erp_local_v1';
 const USER_KEY='mobile_shop_erp_user_v1';
+const SHOP_KEY='mobile_shop_erp_shop_v1';
 const now=()=>new Date().toISOString();
 const dateOnly=()=>now().slice(0,10);
 const seed=()=>({mobiles:[],accessories:[],customers:[],sales:[],seq:{mobile:1,accessory:1,customer:1,sale:1}});
@@ -14,6 +15,11 @@ const paginate=(rows,p={})=>{const page=Number(p.page||1),limit=Number(p.limit||
 const user=()=>{try{return JSON.parse(localStorage.getItem(USER_KEY))||{username:'admin',password:'admin123',fullName:'Administrator',role:'admin'}}catch{return {username:'admin',password:'admin123',fullName:'Administrator',role:'admin'}}};
 const storeUser=u=>localStorage.setItem(USER_KEY,JSON.stringify(u));
 if(!localStorage.getItem(USER_KEY)) storeUser({id:1,username:'admin',password:'admin123',fullName:'Administrator',role:'admin'});
+
+export const shopAPI={
+ get:()=>{let s;try{s=JSON.parse(localStorage.getItem(SHOP_KEY))}catch{};return ok(s||{shopName:'Mobile Shop',phone:'',email:'',address:'',currency:'Rs',logo:''})},
+ save:data=>{const s={shopName:String(data.shopName||'Mobile Shop'),phone:String(data.phone||''),email:String(data.email||''),address:String(data.address||''),currency:'Rs',logo:data.logo||''};localStorage.setItem(SHOP_KEY,JSON.stringify(s));return ok(s)}
+};
 
 export const authAPI={
  login:({username,password})=>{const u=user();return username===u.username&&password===u.password?ok({user:{id:1,username:u.username,fullName:u.fullName,role:u.role},token:'local-device-token'}):fail('Invalid username or password',401)},
