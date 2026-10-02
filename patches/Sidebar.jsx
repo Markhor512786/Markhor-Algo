@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { X, LayoutDashboard, Smartphone, Cable, ShoppingCart, Users, FileText, Settings, AlertTriangle, Store, WalletCards, DatabaseBackup, History, CalendarCheck, SearchCheck, FileSpreadsheet } from 'lucide-react';
+import { X, LayoutDashboard, Smartphone, Cable, ShoppingCart, Users, FileText, Settings, Store, WalletCards, DatabaseBackup, History, CalendarCheck, SearchCheck, FileSpreadsheet } from 'lucide-react';
 const navItems=[
 {to:'/',icon:LayoutDashboard,label:'Dashboard'},{to:'/sales',icon:ShoppingCart,label:'Sales / Invoices'},
 {to:'/mobiles',icon:Smartphone,label:'Mobiles'},{to:'/accessories',icon:Cable,label:'Accessories'},
@@ -15,7 +15,5 @@ export default function Sidebar({isOpen,onClose}){
  <nav className="p-4 space-y-1.5">{navItems.map(({to,icon:Icon,label})=><NavLink key={to} to={to} end={to==='/'}
  onClick={onClose} className={({isActive})=>`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive?'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-md shadow-blue-100 font-semibold':'text-slate-600 hover:bg-blue-50 hover:text-blue-700'}`}>
  <Icon className="w-5 h-5"/><span>{label}</span></NavLink>)}</nav>
- <div className="absolute bottom-4 left-4 right-4 rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 to-white p-4">
- <div className="flex items-center gap-2 text-sm font-semibold text-slate-700"><AlertTriangle className="w-4 h-4 text-amber-500"/> Low stock alerts</div>
- <p className="text-xs text-slate-500 mt-1">Inventory warnings appear on dashboard.</p></div></aside></>;
+ </aside></>;
 }
