@@ -1,2 +1,32 @@
-import {useEffect,useState} from 'react';import {Clock3} from 'lucide-react';import {auditAPI} from '../../services/api';
-export default function AuditLog(){const [rows,setRows]=useState([]);useEffect(()=>{auditAPI.getAll().then(r=>setRows(r.data.data))},[]);return <div><div className="mb-6"><h2 className="text-2xl font-extrabold">Activity Log</h2><p className="text-slate-500">Recent important actions recorded by the app.</p></div><div className="card"><div className="card-body">{rows.length?rows.map(x=><div key={x.id} className="flex gap-4 py-3 border-b last:border-0"><div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center"><Clock3 className="w-4 h-4 text-blue-600"/></div><div><b className="text-sm">{x.action.replaceAll('_',' ')}</b><p className="text-sm text-slate-500">{x.detail}</p><small className="text-slate-400">{new Date(x.at).toLocaleString()}</small></div></div>):<p className="text-center text-slate-400 py-10">No activity recorded yet.</p>}</div></div></div>
+import {useEffect,useState} from 'react';
+import {Clock3} from 'lucide-react';
+import {auditAPI} from '../../services/api';
+
+export default function AuditLog(){
+  const [rows,setRows]=useState([]);
+  useEffect(()=>{auditAPI.getAll().then(r=>setRows(r.data.data));},[]);
+  return (
+    <div>
+      <div className="mb-6">
+        <h2 className="text-2xl font-extrabold">Activity Log</h2>
+        <p className="text-slate-500">Recent important actions recorded by the app.</p>
+      </div>
+      <div className="card">
+        <div className="card-body">
+          {rows.length ? rows.map(x=>(
+            <div key={x.id} className="flex gap-4 py-3 border-b last:border-0">
+              <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center">
+                <Clock3 className="w-4 h-4 text-blue-600"/>
+              </div>
+              <div>
+                <b className="text-sm">{String(x.action||'').replaceAll('_',' ')}</b>
+                <p className="text-sm text-slate-500">{x.detail}</p>
+                <small className="text-slate-400">{new Date(x.at).toLocaleString()}</small>
+              </div>
+            </div>
+          )) : <p className="text-center text-slate-400 py-10">No activity recorded yet.</p>}
+        </div>
+      </div>
+    </div>
+  );
+}
